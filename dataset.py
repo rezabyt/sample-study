@@ -27,7 +27,7 @@ def get_cifar10_train_loader(args, data_path, norm):
 
     dataset = datasets.CIFAR10(root=data_path, train=True, download=True, transform=train_transforms)
     loader = torch.utils.data.DataLoader(dataset, batch_size=args.batch_size, shuffle=True, num_workers=8)
-    loader.name = "train_cifar10"
+    loader.name = "train"
 
     return loader
 
@@ -39,5 +39,5 @@ def get_cifar10_test_loader(args, data_path, norm=False):
     test_transforms = transforms.Compose(ts)
     dataset = datasets.CIFAR10(data_path, train=False, download=True, transform=test_transforms)
     loader = torch.utils.data.DataLoader(dataset, batch_size=args.batch_size, shuffle=False, num_workers=2)
-    loader.name = "test_cifar10"
+    loader.name = "test"
     return loader
