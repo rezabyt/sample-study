@@ -9,7 +9,7 @@ import torch.optim as optim
 from torchattacks import PGD
 
 from models.resnet import ResNet18
-from trainer import NT, AT, NRT, ART
+from trainer import NT, AT
 
 
 def seed_experiment(seed):
