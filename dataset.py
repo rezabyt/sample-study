@@ -1,6 +1,4 @@
 import torch
-from torch.utils.data import Dataset
-
 import torchvision.datasets as datasets
 import torchvision.transforms as transforms
 
