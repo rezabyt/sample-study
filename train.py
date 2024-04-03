@@ -71,10 +71,10 @@ def main(args):
 
         trainer.train(loader=train_loader, epoch=epoch)
 
-        # plot histogram of weights and gradient:
+        # Plot histogram of weights and gradient:
         trainer.log_model_params(epoch)
 
-        # Adjust learning rate for SGD
+        # Adjust learning rate
         lr_scheduler.step()
 
         # Evaluation on the train clean examples

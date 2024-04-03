@@ -68,12 +68,8 @@ def get_adversary(args, model):
 def get_trainer(args, model, opt, device, adversary):
     if args.trainer == 'nt':
         return NT(args=args, model=model, opt=opt, device=device)
-    elif args.trainer == 'nrt':
-        return NRT(args=args, model=model, opt=opt, device=device)
     elif args.trainer == 'at':
         return AT(args=args, model=model, opt=opt, device=device, adversary=adversary)
-    elif args.trainer == 'art':
-        return ART(args=args, model=model, opt=opt, device=device, adversary=adversary)
     else:
         raise ValueError(f'Invalid trainer {args.trainer}!')
 
@@ -94,7 +90,7 @@ def get_exp_name(args):
     name = f"{name}_opt[{args.opt_type}]_lr[{args.lr}]_lr_scheduler[{args.lr_scheduler}]"
 
     # Attack
-    if args.trainer in ('at', 'art'):
+    if args.trainer in ('at'):
         name = f"{name}_attack[{args.attack_name}]"
 
     # General
