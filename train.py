@@ -12,6 +12,8 @@ from utils import get_model, get_optimizer, get_lr_scheduler, get_adversary, get
 import dataset
 from dataset import get_data_loaders
 
+import ssl
+ssl._create_default_https_context = ssl._create_unverified_context
 
 def main(args):
     # Seed the experiment, for repeatability

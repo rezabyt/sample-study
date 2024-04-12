@@ -74,7 +74,7 @@ def get_trainer(args, model, opt, device, adversary):
         raise ValueError(f'Invalid trainer {args.trainer}!')
 
 
-def get_exp_name(args):
+def get_exp_name(args, seed=None):
     if args.exp_name:
         return args.exp_name
     # Run
@@ -96,7 +96,11 @@ def get_exp_name(args):
     # General
     if args.exp_spec:
         name = f"{name}_exp_spec[{args.exp_spec}]"
-    name = f"{name}_seed[{args.seed}]"
+    
+    if seed:
+        name = f"{name}_seed[{seed}]"
+    else:
+        name = f"{name}_seed[{args.seed}]"
     return name
 
 
