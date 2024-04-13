@@ -96,6 +96,7 @@ def main(args):
         # Log learning rate
         wandb.log({'Learning rate': lr_scheduler.get_last_lr()[0], 'epoch': epoch})
 
+        # Train the model for one epoch
         loss = trainer.train(loader=train_loader, epoch=epoch)
 
         # Plot histogram of weights and gradient:
