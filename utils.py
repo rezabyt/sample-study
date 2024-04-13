@@ -65,7 +65,7 @@ def get_adversary(args, model):
         raise NotImplementedError(f'Dataset not recognized {args.attack_name}!')
 
 
-def get_trainer(args, model, opt, device, adversary):
+def get_trainer(args, model, opt, device, adversary=None):
     if args.trainer == 'nt':
         return NT(args=args, model=model, opt=opt, device=device)
     elif args.trainer == 'at':
@@ -128,6 +128,18 @@ def save_args(args, trained_model_path):
     with open(save_path, 'w') as file:
         json.dump(vars(args), file)
 
+
+def save_wandb_job_id(trained_model_path, wandb_job_id):
+    save_path = os.path.join(trained_model_path, 'wandb_job_id.txt')
+    with open(save_path, 'w') as file:
+        file.write(wandb_job_id)
+
+
+def load_wandb_job_id(trained_model_path):
+    save_path = os.path.join(trained_model_path, 'wandb_job_id.txt')
+    with open(save_path, 'r') as file:
+        return file.read()
+    
 
 def get_last_checkpoint(trained_model_path):
     files = os.listdir(trained_model_path)

@@ -71,6 +71,13 @@ class NT:
 
         acc_key_name = f'{loader.name.upper()} {mode} Accuracy'
         wandb.log({acc_key_name: accuracy, 'epoch': epoch})
+    
+    def eval(self, train_loader, test_loader, epoch, adversary=None):
+         # Evaluation on the train clean examples
+        self.evaluate(loader=train_loader, adversary=None, epoch=epoch)
+
+        # Evaluation on test clean examples
+        self.evaluate(loader=test_loader, adversary=None, epoch=epoch)
 
     def log_model_params(self, epoch):
         for name, param in self.model.named_parameters():
@@ -92,3 +99,13 @@ class AT(NT):
         X_adv = self.adversary(X, y)
         batch = (X_adv, y)
         return super().update(batch, epoch, batch_idx, loader_length)
+
+    def eval(self, train_loader, test_loader, epoch, adversary):
+        # Evaluation on the train clean examples
+        self.evaluate(loader=train_loader, adversary=None, epoch=epoch)
+
+        # Evaluation on test clean examples
+        self.evaluate(loader=test_loader, adversary=None, epoch=epoch)
+
+        # Evaluation on test adversarial examples
+        self.evaluate(loader=test_loader, adversary=adversary, epoch=epoch)

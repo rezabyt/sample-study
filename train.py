@@ -8,6 +8,7 @@ import wandb
 
 from utils import seed_experiment, get_exp_name, create_safe_path, save_args, get_last_checkpoint
 from utils import get_model, get_optimizer, get_lr_scheduler, get_adversary, get_trainer
+from utils import load_wandb_job_id, save_wandb_job_id
 
 import dataset
 from dataset import get_data_loaders
@@ -34,9 +35,12 @@ def main(args):
         if not os.path.exists(trained_model_path):
             raise FileNotFoundError(f"Checkpoint path {trained_model_path} does not exist!")
         print(f"Resuming training from {trained_model_path}!")
+        wandb_job_id = load_wandb_job_id(trained_model_path=trained_model_path)
     else:
         trained_model_path = create_safe_path(trained_model_path)
-        
+        wandb_job_id = wandb.util.generate_id()
+        save_wandb_job_id(trained_model_path=trained_model_path, wandb_job_id=wandb_job_id)
+
     safe_exp_name = os.path.split(trained_model_path)[-1]
 
     # Save arguments for reproducibility
@@ -44,7 +48,8 @@ def main(args):
 
     # Init WandB
     wandb.init(name=safe_exp_name, entity=args.wandb_entity_name, project=args.wandb_project_name,
-               config={'args': vars(args)}, tags=[args.trainer, args.model, args.dataset], resume=True)
+               config={'args': vars(args)}, tags=[args.trainer, args.model, args.dataset], 
+               id=wandb_job_id, resume="allow")
 
     # Define a name for the model's checkpoint
     model_filename = f"{args.trainer}_{args.dataset}_{args.model}"
@@ -76,10 +81,13 @@ def main(args):
     else:
         init_epoch = 0
 
-    # Define adversary
-    adversary = get_adversary(args=args, model=model)
-    if dataset_norm:
-        adversary.set_normalization_used(mean=dataset.CIFAR_MEAN, std=dataset.CIFAR_STD)
+    # Define adversary if trainer is AT
+    if args.trainer == 'at':
+        adversary = get_adversary(args=args, model=model)
+        if dataset_norm:
+            adversary.set_normalization_used(mean=dataset.CIFAR_MEAN, std=dataset.CIFAR_STD)
+    else:
+        adversary = None
 
     # Get the trainer
     trainer = get_trainer(args=args, model=model, opt=opt, device=device, adversary=adversary)
@@ -95,16 +103,10 @@ def main(args):
 
         # Adjust learning rate
         lr_scheduler.step()
-
-        # Evaluation on the train clean examples
-        trainer.evaluate(loader=train_loader, adversary=None, epoch=epoch)
-
-        # Evaluation on test clean examples
-        trainer.evaluate(loader=test_loader, adversary=None, epoch=epoch)
-
-        # Evaluation on test adversarial examples
-        trainer.evaluate(loader=test_loader, adversary=adversary, epoch=epoch)
         
+        # Evaluate the model on datasets
+        trainer.eval(train_loader, test_loader, epoch, adversary)
+
         # Save model and optimizer states
         torch.save({
             'epoch': epoch,
