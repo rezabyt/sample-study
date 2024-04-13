@@ -127,3 +127,10 @@ def save_args(args, trained_model_path):
     save_path = os.path.join(trained_model_path, 'args.json')
     with open(save_path, 'w') as file:
         json.dump(vars(args), file)
+
+
+def get_last_checkpoint(trained_model_path):
+    files = os.listdir(trained_model_path)
+    checkpoint_files = [f for f in files if f.endswith('.pt')]
+    sorted_checkpoints = sorted(checkpoint_files, key=lambda x: int(x.split('_')[-1].split('.')[0]))
+    return torch.load(os.path.join(trained_model_path, sorted_checkpoints[-1]))

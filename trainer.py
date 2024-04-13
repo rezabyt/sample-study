@@ -40,6 +40,7 @@ class NT:
             epoch_loss += loss.item() / len(loader)
 
         wandb.log({'Train Loss': epoch_loss, 'epoch': epoch})
+        return epoch_loss
 
     def evaluate(self, loader, adversary, epoch):
         self.model.eval()

@@ -6,7 +6,7 @@ import torch.nn as nn
 
 import wandb
 
-from utils import seed_experiment, get_exp_name, create_safe_path, save_args
+from utils import seed_experiment, get_exp_name, create_safe_path, save_args, get_last_checkpoint
 from utils import get_model, get_optimizer, get_lr_scheduler, get_adversary, get_trainer
 
 import dataset
@@ -29,7 +29,14 @@ def main(args):
 
     # Define the trained model path
     trained_model_path = os.path.join(args.save_path, f'checkpoints/{args.dataset}', exp_name)
-    trained_model_path = create_safe_path(trained_model_path)
+
+    if args.resume == 'on':
+        if not os.path.exists(trained_model_path):
+            raise FileNotFoundError(f"Checkpoint path {trained_model_path} does not exist!")
+        print(f"Resuming training from {trained_model_path}!")
+    else:
+        trained_model_path = create_safe_path(trained_model_path)
+        
     safe_exp_name = os.path.split(trained_model_path)[-1]
 
     # Save arguments for reproducibility
@@ -37,7 +44,7 @@ def main(args):
 
     # Init WandB
     wandb.init(name=safe_exp_name, entity=args.wandb_entity_name, project=args.wandb_project_name,
-               config={'args': vars(args)}, tags=[args.trainer, args.model, args.dataset])
+               config={'args': vars(args)}, tags=[args.trainer, args.model, args.dataset], resume=True)
 
     # Define a name for the model's checkpoint
     model_filename = f"{args.trainer}_{args.dataset}_{args.model}"
@@ -59,6 +66,16 @@ def main(args):
     opt = get_optimizer(args=args, model=model)
     lr_scheduler = get_lr_scheduler(args=args, opt=opt)
 
+    # Load the saved model, optimizer, and LR scheduler states if resuming
+    if args.resume == 'on':
+        checkpoint = get_last_checkpoint(trained_model_path)
+        model.load_state_dict(checkpoint['model_state_dict'])
+        opt.load_state_dict(checkpoint['optimizer_state_dict'])
+        lr_scheduler.load_state_dict(checkpoint['lr_scheduler_state_dict'])
+        init_epoch = checkpoint['epoch'] + 1
+    else:
+        init_epoch = 0
+
     # Define adversary
     adversary = get_adversary(args=args, model=model)
     if dataset_norm:
@@ -67,11 +84,11 @@ def main(args):
     # Get the trainer
     trainer = get_trainer(args=args, model=model, opt=opt, device=device, adversary=adversary)
 
-    for epoch in range(args.epochs):
+    for epoch in range(init_epoch, args.epochs):
         # Log learning rate
         wandb.log({'Learning rate': lr_scheduler.get_last_lr()[0], 'epoch': epoch})
 
-        trainer.train(loader=train_loader, epoch=epoch)
+        loss = trainer.train(loader=train_loader, epoch=epoch)
 
         # Plot histogram of weights and gradient:
         trainer.log_model_params(epoch)
@@ -87,9 +104,14 @@ def main(args):
 
         # Evaluation on test adversarial examples
         trainer.evaluate(loader=test_loader, adversary=adversary, epoch=epoch)
-
-        # Save the checkpoint
-        torch.save(model.state_dict(), os.path.join(trained_model_path, model_filename + f'_{epoch}.pt'))
+        
+        # Save model and optimizer states
+        torch.save({
+            'epoch': epoch,
+            'model_state_dict': model.state_dict(),
+            'optimizer_state_dict': opt.state_dict(),
+            'lr_scheduler_state_dict': lr_scheduler.state_dict(),
+            'loss': loss}, os.path.join(trained_model_path, model_filename + f'_{epoch}.pt'))
 
 
 def parse_arguments():
@@ -97,6 +119,7 @@ def parse_arguments():
     parser.add_argument('--exp_name', default='', type=str, help='If None, args are combined for the name')
     parser.add_argument('--seed', default=42, type=int, help='Seed for reproducibility.')
     parser.add_argument('--exp_spec', default='', type=str, help='Specific experiment name.')
+    parser.add_argument('--resume', default='off', type=str, help='Resume training from checkpoint.', choices=['off', 'on'])
 
     # Run
     run_args = parser.add_argument_group('Run')
