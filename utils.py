@@ -104,16 +104,22 @@ def get_exp_name(args, seed=None):
     return name
 
 
-def create_safe_path(path):
+def create_safe_path(exp_directory):
     postfix = 1
-    safe_path = path
-    while os.path.exists(safe_path):
-        safe_path = path + f'_{postfix}'
+    safe_exp_directory = exp_directory
+    while os.path.exists(safe_exp_directory):
+        safe_exp_directory = exp_directory + f'_{postfix}'
         postfix += 1
 
-    os.makedirs(safe_path)
+    # Create main directory
+    os.makedirs(safe_exp_directory)
+    
+    # Create subdirectories
+    subdirectories = ['checkpoints', 'stats', 'stats/train_clean', 'stats/test_clean', 'stats/train_adv', 'stats/test_adv']
+    for subdirectory in subdirectories:
+        os.makedirs(os.path.join(safe_exp_directory, subdirectory))
 
-    return safe_path
+    return safe_exp_directory
 
 
 def get_config(config_path):
@@ -123,26 +129,27 @@ def get_config(config_path):
     return config
 
 
-def save_args(args, trained_model_path):
-    save_path = os.path.join(trained_model_path, 'args.json')
+def save_args(args, exp_directory):
+    save_path = os.path.join(exp_directory, 'args.json')
     with open(save_path, 'w') as file:
         json.dump(vars(args), file)
 
 
-def save_wandb_job_id(trained_model_path, wandb_job_id):
-    save_path = os.path.join(trained_model_path, 'wandb_job_id.txt')
+def save_wandb_job_id(exp_directory, wandb_job_id):
+    save_path = os.path.join(exp_directory, 'wandb_job_id.txt')
     with open(save_path, 'w') as file:
         file.write(wandb_job_id)
 
 
-def load_wandb_job_id(trained_model_path):
-    save_path = os.path.join(trained_model_path, 'wandb_job_id.txt')
+def load_wandb_job_id(exp_directory):
+    save_path = os.path.join(exp_directory, 'wandb_job_id.txt')
     with open(save_path, 'r') as file:
         return file.read()
     
 
-def get_last_checkpoint(trained_model_path):
-    files = os.listdir(trained_model_path)
+def get_last_checkpoint(exp_directory):
+    checkpoints_directory = os.path.join(exp_directory, 'checkpoints')
+    files = os.listdir(checkpoints_directory)
     checkpoint_files = [f for f in files if f.endswith('.pt')]
     sorted_checkpoints = sorted(checkpoint_files, key=lambda x: int(x.split('_')[-1].split('.')[0]))
-    return torch.load(os.path.join(trained_model_path, sorted_checkpoints[-1]))
+    return torch.load(os.path.join(checkpoints_directory, sorted_checkpoints[-1]))

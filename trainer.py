@@ -1,3 +1,6 @@
+import os
+import pickle
+import numpy as np
 import torch
 import torch.nn.functional as F
 
@@ -47,6 +50,8 @@ class NT:
 
         loss = 0
         correct = 0
+        y_hats = []
+        ys = []
         for X, y in loader:
             X, y = X.to(self.device), y.to(self.device)
 
@@ -55,6 +60,10 @@ class NT:
 
             with torch.no_grad():
                 y_hat = self.model(X)
+            
+            # Append the predictions and true labels for later use
+            y_hats.extend(y_hat.cpu().numpy())
+            ys.extend(y.cpu().numpy())
 
             loss += self.get_loss(y_hat, y).item()
             pred = y_hat.max(1, keepdim=True)[1]
@@ -71,13 +80,26 @@ class NT:
 
         acc_key_name = f'{loader.name.upper()} {mode} Accuracy'
         wandb.log({acc_key_name: accuracy, 'epoch': epoch})
+
+        return {'epoch': epoch, 'loss': loss, 'accuracy': accuracy, 'y_hats': np.array(y_hats), 'ys': np.array(ys)}
     
-    def eval(self, train_loader, test_loader, epoch, adversary=None):
+    def eval(self, exp_directory, train_loader, test_loader, epoch, adversary=None):
          # Evaluation on the train clean examples
-        self.evaluate(loader=train_loader, adversary=None, epoch=epoch)
+        train_clean_stats = self.evaluate(loader=train_loader, adversary=None, epoch=epoch)
+        self.save_data_stats(exp_directory, train_clean_stats, epoch, 'train_clean')
 
         # Evaluation on test clean examples
-        self.evaluate(loader=test_loader, adversary=None, epoch=epoch)
+        test_clean_stats = self.evaluate(loader=test_loader, adversary=None, epoch=epoch)
+        self.save_data_stats(exp_directory, test_clean_stats, epoch, 'test_clean')
+        
+
+    def save_data_stats(self, exp_directory, stats, epoch, mode):
+        stat_path = os.path.join(exp_directory, 'stats', mode, f'epoch_{epoch}.pkl')
+
+        # Save the stats to a file
+        with open(stat_path, 'wb') as file:
+            pickle.dump(stats, file)
+
 
     def log_model_params(self, epoch):
         for name, param in self.model.named_parameters():
@@ -100,12 +122,15 @@ class AT(NT):
         batch = (X_adv, y)
         return super().update(batch, epoch, batch_idx, loader_length)
 
-    def eval(self, train_loader, test_loader, epoch, adversary):
+    def eval(self, exp_directory, train_loader, test_loader, epoch, adversary):
         # Evaluation on the train clean examples
-        self.evaluate(loader=train_loader, adversary=None, epoch=epoch)
+        train_clean_stats = self.evaluate(loader=train_loader, adversary=None, epoch=epoch)
+        self.save_data_stats(exp_directory, train_clean_stats, epoch, 'train_clean')
 
         # Evaluation on test clean examples
-        self.evaluate(loader=test_loader, adversary=None, epoch=epoch)
+        test_clean_stats = self.evaluate(loader=test_loader, adversary=None, epoch=epoch)
+        self.save_data_stats(exp_directory, test_clean_stats, epoch, 'test_clean')
 
         # Evaluation on test adversarial examples
-        self.evaluate(loader=test_loader, adversary=adversary, epoch=epoch)
+        test_adv_stats = self.evaluate(loader=test_loader, adversary=adversary, epoch=epoch)
+        self.save_data_stats(exp_directory, test_adv_stats, epoch, 'test_adv')

@@ -28,23 +28,23 @@ def main(args):
     # Define the experiment
     exp_name = get_exp_name(args=args)
 
-    # Define the trained model path
-    trained_model_path = os.path.join(args.save_path, f'checkpoints/{args.dataset}', exp_name)
+    # Define the experiment directory
+    exp_directory = os.path.join(args.save_path, f'logs/{args.dataset}', exp_name)
 
     if args.resume == 'on':
-        if not os.path.exists(trained_model_path):
-            raise FileNotFoundError(f"Checkpoint path {trained_model_path} does not exist!")
-        print(f"Resuming training from {trained_model_path}!")
-        wandb_job_id = load_wandb_job_id(trained_model_path=trained_model_path)
+        if not os.path.exists(exp_directory):
+            raise FileNotFoundError(f"Experiment directory {exp_directory} does not exist!")
+        print(f"Resuming training from {exp_directory}!")
+        wandb_job_id = load_wandb_job_id(exp_directory=exp_directory)
     else:
-        trained_model_path = create_safe_path(trained_model_path)
+        exp_directory = create_safe_path(exp_directory=exp_directory)
         wandb_job_id = wandb.util.generate_id()
-        save_wandb_job_id(trained_model_path=trained_model_path, wandb_job_id=wandb_job_id)
+        save_wandb_job_id(exp_directory=exp_directory, wandb_job_id=wandb_job_id)
 
-    safe_exp_name = os.path.split(trained_model_path)[-1]
+    safe_exp_name = os.path.split(exp_directory)[-1]
 
     # Save arguments for reproducibility
-    save_args(args=args, trained_model_path=trained_model_path)
+    save_args(args=args, exp_directory=exp_directory)
 
     # Init WandB
     wandb.init(name=safe_exp_name, entity=args.wandb_entity_name, project=args.wandb_project_name,
@@ -73,7 +73,7 @@ def main(args):
 
     # Load the saved model, optimizer, and LR scheduler states if resuming
     if args.resume == 'on':
-        checkpoint = get_last_checkpoint(trained_model_path)
+        checkpoint = get_last_checkpoint(exp_directory)
         model.load_state_dict(checkpoint['model_state_dict'])
         opt.load_state_dict(checkpoint['optimizer_state_dict'])
         lr_scheduler.load_state_dict(checkpoint['lr_scheduler_state_dict'])
@@ -106,7 +106,7 @@ def main(args):
         lr_scheduler.step()
         
         # Evaluate the model on datasets
-        trainer.eval(train_loader, test_loader, epoch, adversary)
+        trainer.eval(exp_directory, train_loader, test_loader, epoch, adversary)
 
         # Save model and optimizer states
         torch.save({
@@ -114,7 +114,7 @@ def main(args):
             'model_state_dict': model.state_dict(),
             'optimizer_state_dict': opt.state_dict(),
             'lr_scheduler_state_dict': lr_scheduler.state_dict(),
-            'loss': loss}, os.path.join(trained_model_path, model_filename + f'_{epoch}.pt'))
+            'loss': loss}, os.path.join(exp_directory, 'checkpoints', f'{model_filename}_{epoch}.pt'))
 
 
 def parse_arguments():
