@@ -51,9 +51,6 @@ def main(args):
                config={'args': vars(args)}, tags=[args.trainer, args.model, args.dataset], 
                id=wandb_job_id, resume="allow")
 
-    # Define a name for the model's checkpoint
-    model_filename = f"{args.trainer}_{args.dataset}_{args.model}"
-
     # Load the dataset
     data_path = os.path.join(args.data_path, args.dataset)
     dataset_norm = True if args.dataset_norm == 'on' else False
@@ -71,16 +68,6 @@ def main(args):
     opt = get_optimizer(args=args, model=model)
     lr_scheduler = get_lr_scheduler(args=args, opt=opt)
 
-    # Load the saved model, optimizer, and LR scheduler states if resuming
-    if args.resume == 'on':
-        checkpoint = get_last_checkpoint(exp_directory)
-        model.load_state_dict(checkpoint['model_state_dict'])
-        opt.load_state_dict(checkpoint['optimizer_state_dict'])
-        lr_scheduler.load_state_dict(checkpoint['lr_scheduler_state_dict'])
-        init_epoch = checkpoint['epoch'] + 1
-    else:
-        init_epoch = 0
-
     # Define adversary if trainer is AT
     if args.trainer == 'at':
         adversary = get_adversary(args=args, model=model)
@@ -90,31 +77,31 @@ def main(args):
         adversary = None
 
     # Get the trainer
-    trainer = get_trainer(args=args, model=model, opt=opt, device=device, adversary=adversary)
+    trainer = get_trainer(args=args, exp_directory=exp_directory, train_loader=train_loader, test_loader=test_loader, 
+                          model=model, opt=opt, lr_scheduler=lr_scheduler, device=device, adversary=adversary)
+
+    # Load the saved model, optimizer, and LR scheduler states if resuming
+    if args.resume == 'on':
+        checkpoint = get_last_checkpoint(exp_directory)
+        init_epoch = trainer.load_from_checkpoint(checkpoint)
+    else:
+        init_epoch = 0
 
     for epoch in range(init_epoch, args.epochs):
         # Log learning rate
-        wandb.log({'Learning rate': lr_scheduler.get_last_lr()[0], 'epoch': epoch})
+        trainer.log_learning_rate(epoch)
 
         # Train the model for one epoch
-        loss = trainer.train(loader=train_loader, epoch=epoch)
+        trainer.train(epoch)
 
-        # Plot histogram of weights and gradient:
+        # Log model parameters
         trainer.log_model_params(epoch)
-
-        # Adjust learning rate
-        lr_scheduler.step()
         
         # Evaluate the model on datasets
-        trainer.eval(exp_directory, train_loader, test_loader, epoch, adversary)
+        trainer.eval(epoch)
 
-        # Save model and optimizer states
-        torch.save({
-            'epoch': epoch,
-            'model_state_dict': model.state_dict(),
-            'optimizer_state_dict': opt.state_dict(),
-            'lr_scheduler_state_dict': lr_scheduler.state_dict(),
-            'loss': loss}, os.path.join(exp_directory, 'checkpoints', f'{model_filename}_{epoch}.pt'))
+        # Save the model
+        trainer.save_model(epoch)
 
 
 def parse_arguments():

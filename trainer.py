@@ -8,10 +8,14 @@ import wandb
 
 
 class NT:
-    def __init__(self, args, model, opt, device):
+    def __init__(self, args, exp_directory, train_loader, test_loader, model, opt, lr_scheduler, device):
         self.args = args
+        self.exp_directory = exp_directory
+        self.train_loader = train_loader
+        self.test_loader = test_loader
         self.model = model
         self.opt = opt
+        self.lr_scheduler = lr_scheduler
         self.device = device
 
     def get_loss(self, y_hat, y):
@@ -35,14 +39,18 @@ class NT:
                 f'Loss: {loss.item():.6f}')
         return loss
 
-    def train(self, loader, epoch):
+    def train(self, epoch):
         self.model.train()
         epoch_loss = 0
-        for batch_idx, batch in enumerate(loader):
-            loss = self.update(batch=batch, epoch=epoch, batch_idx=batch_idx, loader_length=len(loader.dataset))
-            epoch_loss += loss.item() / len(loader)
+        for batch_idx, batch in enumerate(self.train_loader):
+            loss = self.update(batch=batch, epoch=epoch, batch_idx=batch_idx, loader_length=len(self.train_loader.dataset))
+            epoch_loss += loss.item() / len(self.train_loader)
 
         wandb.log({'Train Loss': epoch_loss, 'epoch': epoch})
+
+        # Adjust learning rate
+        self.lr_scheduler.step()
+
         return epoch_loss
 
     def evaluate(self, loader, adversary, epoch):
@@ -83,22 +91,25 @@ class NT:
 
         return {'epoch': epoch, 'loss': loss, 'accuracy': accuracy, 'y_hats': np.array(y_hats), 'ys': np.array(ys)}
     
-    def eval(self, exp_directory, train_loader, test_loader, epoch, adversary=None):
-         # Evaluation on the train clean examples
-        train_clean_stats = self.evaluate(loader=train_loader, adversary=None, epoch=epoch)
-        self.save_data_stats(exp_directory, train_clean_stats, epoch, 'train_clean')
+    def eval(self, epoch):
+        # Evaluation on the train clean examples
+        self.evaluate(loader=self.train_loader, adversary=None, epoch=epoch)
 
-        # Evaluation on test clean examples
-        test_clean_stats = self.evaluate(loader=test_loader, adversary=None, epoch=epoch)
-        self.save_data_stats(exp_directory, test_clean_stats, epoch, 'test_clean')
+        # Evaluation on test clean examples and save the stats
+        test_clean_stats = self.evaluate(loader=self.test_loader, adversary=None, epoch=epoch)
+        self.save_data_stats(self.exp_directory, test_clean_stats, epoch, 'test_clean')
         
 
     def save_data_stats(self, exp_directory, stats, epoch, mode):
-        stat_path = os.path.join(exp_directory, 'stats', mode, f'epoch_{epoch}.pkl')
+        stat_path = os.path.join(exp_directory, 'stats', f'{mode}_epoch_{epoch}.pkl')
 
         # Save the stats to a file
         with open(stat_path, 'wb') as file:
             pickle.dump(stats, file)
+
+
+    def log_learning_rate(self, epoch):
+        wandb.log({'Learning rate': self.lr_scheduler.get_last_lr()[0], 'epoch': epoch})
 
 
     def log_model_params(self, epoch):
@@ -107,11 +118,28 @@ class NT:
             weights = wandb.Histogram(param.data.cpu().detach().numpy())
 
             wandb.log({'epoch': epoch, f'Gradients/{name}': gradients, f'Weights/{name}': weights})
+    
+    def save_model(self, epoch, step='end'):
+        # Save model and optimizer states
+        checkpoint_path = os.path.join(self.exp_directory, 'checkpoints', f'epoch_{epoch}_step_{step}.pt')
+        state_dicts = {
+            'epoch': epoch,
+            'model_state_dict': self.model.state_dict(),
+            'optimizer_state_dict': self.opt.state_dict(),
+            'lr_scheduler_state_dict': self.lr_scheduler.state_dict()}
+        
+        torch.save(state_dicts, checkpoint_path)
+    
+    def load_from_checkpoint(self, checkpoint):
+        self.model.load_state_dict(checkpoint['model_state_dict'])
+        self.opt.load_state_dict(checkpoint['optimizer_state_dict'])
+        self.lr_scheduler.load_state_dict(checkpoint['lr_scheduler_state_dict'])
 
+        return checkpoint['epoch'] + 1
 
 class AT(NT):
-    def __init__(self, args, model, opt, device, adversary):
-        super(AT, self).__init__(args, model, opt, device)
+    def __init__(self, args, exp_directory, train_loader, test_loader, model, opt, lr_scheduler, device, adversary):
+        super(AT, self).__init__(args, exp_directory, train_loader, test_loader, model, opt, lr_scheduler, device)
         self.adversary = adversary
 
     def update(self, batch, epoch, batch_idx, loader_length):
@@ -122,15 +150,14 @@ class AT(NT):
         batch = (X_adv, y)
         return super().update(batch, epoch, batch_idx, loader_length)
 
-    def eval(self, exp_directory, train_loader, test_loader, epoch, adversary):
+    def eval(self, epoch):
         # Evaluation on the train clean examples
-        train_clean_stats = self.evaluate(loader=train_loader, adversary=None, epoch=epoch)
-        self.save_data_stats(exp_directory, train_clean_stats, epoch, 'train_clean')
+        self.evaluate(loader=self.train_loader, adversary=None, epoch=epoch)
 
-        # Evaluation on test clean examples
-        test_clean_stats = self.evaluate(loader=test_loader, adversary=None, epoch=epoch)
-        self.save_data_stats(exp_directory, test_clean_stats, epoch, 'test_clean')
+        # Evaluation on test clean examples and save the stats
+        test_clean_stats = self.evaluate(loader=self.test_loader, adversary=None, epoch=epoch)
+        self.save_data_stats(self.exp_directory, test_clean_stats, epoch, 'test_clean')
 
-        # Evaluation on test adversarial examples
-        test_adv_stats = self.evaluate(loader=test_loader, adversary=adversary, epoch=epoch)
-        self.save_data_stats(exp_directory, test_adv_stats, epoch, 'test_adv')
+        # Evaluation on test adversarial examples and save the stats
+        test_adv_stats = self.evaluate(loader=self.test_loader, adversary=self.adversary, epoch=epoch)
+        self.save_data_stats(self.exp_directory, test_adv_stats, epoch, 'test_adv')

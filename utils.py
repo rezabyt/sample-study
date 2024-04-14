@@ -65,11 +65,13 @@ def get_adversary(args, model):
         raise NotImplementedError(f'Dataset not recognized {args.attack_name}!')
 
 
-def get_trainer(args, model, opt, device, adversary=None):
+def get_trainer(args, exp_directory, train_loader, test_loader, model, opt, lr_scheduler, device, adversary=None):
     if args.trainer == 'nt':
-        return NT(args=args, model=model, opt=opt, device=device)
+        return NT(args=args, exp_directory=exp_directory, train_loader=train_loader, test_loader=test_loader,
+                   model=model, opt=opt, lr_scheduler=lr_scheduler, device=device)
     elif args.trainer == 'at':
-        return AT(args=args, model=model, opt=opt, device=device, adversary=adversary)
+        return AT(args=args, exp_directory=exp_directory, train_loader=train_loader, test_loader=test_loader, 
+                  model=model, opt=opt, lr_scheduler=lr_scheduler, device=device, adversary=adversary)
     else:
         raise ValueError(f'Invalid trainer {args.trainer}!')
 
@@ -115,7 +117,7 @@ def create_safe_path(exp_directory):
     os.makedirs(safe_exp_directory)
     
     # Create subdirectories
-    subdirectories = ['checkpoints', 'stats', 'stats/train_clean', 'stats/test_clean', 'stats/train_adv', 'stats/test_adv']
+    subdirectories = ['checkpoints', 'stats']
     for subdirectory in subdirectories:
         os.makedirs(os.path.join(safe_exp_directory, subdirectory))
 
@@ -150,6 +152,6 @@ def load_wandb_job_id(exp_directory):
 def get_last_checkpoint(exp_directory):
     checkpoints_directory = os.path.join(exp_directory, 'checkpoints')
     files = os.listdir(checkpoints_directory)
-    checkpoint_files = [f for f in files if f.endswith('.pt')]
-    sorted_checkpoints = sorted(checkpoint_files, key=lambda x: int(x.split('_')[-1].split('.')[0]))
+    checkpoint_files = [f for f in files if f.endswith('.pt') and 'end' in f]
+    sorted_checkpoints = sorted(checkpoint_files, key=lambda x: int(x.split('_')[1]))
     return torch.load(os.path.join(checkpoints_directory, sorted_checkpoints[-1]))
