@@ -24,3 +24,5 @@ wandb/
 scripts/
 
 venv/
+
+tmp-codes/
