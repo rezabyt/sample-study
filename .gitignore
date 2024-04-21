@@ -26,3 +26,5 @@ scripts/
 venv/
 
 tmp-codes/
+
+results/
