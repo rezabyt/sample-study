@@ -11,6 +11,14 @@ from scipy.special import softmax
 from scipy.stats import entropy
 
 
+CATEGORY_COLORS = {'monotone': 'purple', 'easy': 'green', 'hard': 'red', 'non_monotone': 'orange'}
+ALL_COLORS = CATEGORY_COLORS.copy()
+ALL_COLORS['all'] = 'blue'
+
+CATEGORY_LABELS = {'monotone': 'Monotone', 'easy': 'Easy', 'hard': 'Hard', 'non_monotone': 'Non-Monotone'}
+ALL_LABELS = CATEGORY_LABELS.copy()
+ALL_LABELS['all'] = 'All'
+
 def sort_filenames_by_epoch_and_step(directory, data_type):
     # Get all filenames in the directory
     filenames = os.listdir(directory)
@@ -94,15 +102,13 @@ def get_point_categories(avg_stats, threshold):
     return {key: np.array(value) for key, value in categories.items()}
 
 
-def plot_entropies(args, category_entropies):
-    colors = {'all': 'blue', 'non_monotone': 'red', 'easy': 'green', 'hard': 'orange', 'monotone': 'purple'}
-    
+def plot_entropies(args, category_entropies):    
     plt.figure()
     for category, entropies in category_entropies.items():
         mean_entropies = np.mean(entropies, axis=0)
         std_entropies = np.std(entropies, axis=0)
-        plt.plot(mean_entropies, color=colors[category], label=category)
-        plt.fill_between(np.arange(len(mean_entropies)), mean_entropies - std_entropies, mean_entropies + std_entropies, alpha=0.2, color=colors[category])
+        plt.plot(mean_entropies, color=ALL_COLORS[category], label=ALL_LABELS[category])
+        plt.fill_between(np.arange(len(mean_entropies)), mean_entropies - std_entropies, mean_entropies + std_entropies, alpha=0.2, color=ALL_COLORS[category])
     
     plt.xlabel('Epoch')
     plt.ylabel('Entropy')
@@ -112,6 +118,36 @@ def plot_entropies(args, category_entropies):
     plt_name = f'results/{args.base_exp_name}_data_type[{args.data_type}]_entropy.png'
     plt.savefig(plt_name, dpi=300)
     plt.close()
+
+
+def plot_categories(args, categories):
+    
+    # Plot percentage of points in each category
+    total_points = len(categories['non_monotone']) + len(categories['easy']) + len(categories['hard']) + len(categories['monotone'])
+    percentages = {key: len(categories[key]) * 100 / total_points for key in categories.keys()}
+    print(percentages)
+    # import ipdb; ipdb.set_trace()
+
+    plt.figure(figsize=(8, 6))
+    # Set the font size
+    plt.rcParams.update({'font.size': 14})
+
+    plt.bar(percentages.keys(), percentages.values(), color=[CATEGORY_COLORS[key] for key in percentages.keys()], alpha=0.5, edgecolor='black', width=0.5)
+    # show percentages on top of bars
+    for i, (_, value) in enumerate(percentages.items()):
+        plt.text(i, value + 0.001, f'{value:.2f}%', ha='center', va='bottom', color='black')
+
+
+    plt.xlabel('Category', labelpad=10)
+    plt.ylabel('Percentage of Points (%)', labelpad=20)
+    plt.title('Distribution of Points in Categories', pad=10)
+    plt.ylim(0, max(percentages.values()) + 5)
+
+    plt.xticks(list(CATEGORY_LABELS.keys()), CATEGORY_LABELS.values())
+    plt.tight_layout()
+
+    plt_name = f'results/{args.base_exp_name}_data_type[{args.data_type}]_categories.png'
+    plt.savefig(plt_name, dpi=300)
         
 
 def get_entropies(y_hats, idx=None):
@@ -138,6 +174,9 @@ def main(args):
     # Define categories of points
     avg_stats = get_avg_stats_over_seeds(stats)
     categories = get_point_categories(avg_stats, threshold=3.0)
+
+    # # Plot categories
+    # plot_categories(args, categories)
 
     category_entropies = {}
 
