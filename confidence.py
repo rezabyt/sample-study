@@ -103,17 +103,20 @@ def get_point_categories(avg_stats, threshold):
 
 
 def plot_entropies(args, category_entropies):    
-    plt.figure()
+    plt.figure(figsize=(8, 6))
+    plt.rcParams.update({'font.size': 14})
+
     for category, entropies in category_entropies.items():
         mean_entropies = np.mean(entropies, axis=0)
         std_entropies = np.std(entropies, axis=0)
-        plt.plot(mean_entropies, color=ALL_COLORS[category], label=ALL_LABELS[category])
+        plt.plot(mean_entropies, color=ALL_COLORS[category], label=ALL_LABELS[category], alpha=0.8)
         plt.fill_between(np.arange(len(mean_entropies)), mean_entropies - std_entropies, mean_entropies + std_entropies, alpha=0.2, color=ALL_COLORS[category])
     
-    plt.xlabel('Epoch')
-    plt.ylabel('Entropy')
-    plt.title('Entropy of Predictions')
+    plt.xlabel('Steps', labelpad=10)
+    plt.ylabel('Entropy', labelpad=20)
+    plt.title('Entropy of Predictions', pad=10)
     plt.legend()
+    plt.tight_layout()
     
     plt_name = f'results/{args.base_exp_name}_data_type[{args.data_type}]_entropy.png'
     plt.savefig(plt_name, dpi=300)
