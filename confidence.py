@@ -19,17 +19,17 @@ CATEGORY_LABELS = {'monotone': 'Monotone', 'easy': 'Easy', 'hard': 'Hard', 'non_
 ALL_LABELS = CATEGORY_LABELS.copy()
 ALL_LABELS['all'] = 'All'
 
-def sort_filenames_by_epoch_and_step(directory, data_type):
-    # Get all filenames in the directory
-    filenames = os.listdir(directory)
+def sort_checkpoints_by_epoch_and_step(directory, data_type):
+    # Get all checkpoints in the directory
+    checkpoints = os.listdir(directory)
     
     # Define a regex pattern to extract epoch and step numbers
     pattern = r"test_{}_epoch_(\d+)_step_(\d+|end)\.pkl".format(data_type)
     
-    # Create a list of tuples containing filename, epoch, and step numbers
-    file_info = []
-    for filename in filenames:
-        match = re.match(pattern, filename)
+    # Create a list of tuples containing checkpoint, epoch, and step numbers
+    checkpoint_info = []
+    for checkpoint in checkpoints:
+        match = re.match(pattern, checkpoint)
         if match:
             epoch = int(match.group(1))
             step = match.group(2)
@@ -37,23 +37,23 @@ def sort_filenames_by_epoch_and_step(directory, data_type):
                 step = float('inf')  # Set step to infinity for "end" to ensure it comes last
             else:
                 step = int(step)
-            file_info.append((filename, epoch, step))
+            checkpoint_info.append((checkpoint, epoch, step))
     
     # Sort the list of tuples first by epoch, then by step
-    sorted_file_info = sorted(file_info, key=lambda x: (x[1], x[2]))
+    sorted_checkpoint_info = sorted(checkpoint_info, key=lambda x: (x[1], x[2]))
     
-    # Extract filenames from sorted list
-    sorted_filenames = [item[0] for item in sorted_file_info]
+    # Extract checkpoints from sorted list
+    sorted_checkpoints = [item[0] for item in sorted_checkpoint_info]
     
-    return sorted_filenames
+    return sorted_checkpoints
 
 
-def read_files_and_gather_values(directory, data_type):
-    sorted_filenames = sort_filenames_by_epoch_and_step(directory, data_type)
+def read_checkpoints_and_gather_values(directory, data_type):
+    sorted_checkpoints = sort_checkpoints_by_epoch_and_step(directory, data_type)
     
     stats = {'loss': [], 'accuracy': [], 'y_hats': [], 'ys': []}
-    for filename in sorted_filenames:
-        with open(os.path.join(directory, filename), 'rb') as f:
+    for checkpoint in sorted_checkpoints:
+        with open(os.path.join(directory, checkpoint), 'rb') as f:
             data = pickle.load(f)
             for key in stats.keys():
                 stats[key].append(data[key])
@@ -67,7 +67,7 @@ def get_stats_over_seeds(args):
     for seed in args.seeds:
         directory = os.path.join(args.save_path, args.dataset, f'{args.base_exp_name}_seed[{seed}]', 'stats')
         
-        current_stats = read_files_and_gather_values(directory, args.data_type)
+        current_stats = read_checkpoints_and_gather_values(directory, args.data_type)
         for key in stats.keys():
             stats[key].append(current_stats[key])
     
