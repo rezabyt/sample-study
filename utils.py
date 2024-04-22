@@ -97,7 +97,7 @@ def get_exp_name(args, seed=None):
 
     # General
     if args.exp_spec:
-        name = f"{name}_exp_spec[{args.exp_spec}]"
+        name = f"{name}_{args.exp_spec}"
     
     if seed:
         name = f"{name}_seed[{seed}]"
