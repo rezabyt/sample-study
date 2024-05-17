@@ -118,7 +118,7 @@ def plot_entropies(args, category_entropies):
     plt.legend()
     plt.tight_layout()
     
-    plt_name = f'results/{args.base_exp_name}_data_type[{args.data_type}]_entropy.png'
+    plt_name = f'results/entropy/{args.base_exp_name}_data_type[{args.data_type}]_entropy.png'
     plt.savefig(plt_name, dpi=300)
     plt.close()
 
@@ -149,7 +149,7 @@ def plot_categories(args, categories):
     plt.xticks(list(CATEGORY_LABELS.keys()), CATEGORY_LABELS.values())
     plt.tight_layout()
 
-    plt_name = f'results/{args.base_exp_name}_data_type[{args.data_type}]_categories.png'
+    plt_name = f'results/category/{args.base_exp_name}_data_type[{args.data_type}]_categories.png'
     plt.savefig(plt_name, dpi=300)
         
 
@@ -178,8 +178,8 @@ def main(args):
     avg_stats = get_avg_stats_over_seeds(stats)
     categories = get_point_categories(avg_stats, threshold=3.0)
 
-    # # Plot categories
-    # plot_categories(args, categories)
+    # Plot categories
+    plot_categories(args, categories)
 
     category_entropies = {}
 
