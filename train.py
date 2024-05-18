@@ -10,8 +10,7 @@ from utils import seed_experiment, get_exp_name, create_safe_path, save_args, ge
 from utils import get_model, get_optimizer, get_lr_scheduler, get_adversary, get_trainer
 from utils import load_wandb_job_id, save_wandb_job_id
 
-import dataset
-from dataset import get_data_loaders
+from dataset import get_data_loaders, get_normalization
 
 import ssl
 ssl._create_default_https_context = ssl._create_unverified_context
@@ -72,7 +71,8 @@ def main(args):
     if args.trainer == 'at':
         adversary = get_adversary(args=args, model=model)
         if dataset_norm:
-            adversary.set_normalization_used(mean=dataset.CIFAR_MEAN, std=dataset.CIFAR_STD)
+            mean, std = get_normalization(dataset=args.dataset)
+            adversary.set_normalization_used(mean=mean, std=std)
     else:
         adversary = None
 
@@ -121,7 +121,7 @@ def parse_arguments():
     # Dataset
     data_args = parser.add_argument_group('Dataset')
     data_args.add_argument('--data_path', default='./data', type=str, help='Directory path to data.')
-    data_args.add_argument('--dataset', default='cifar10', type=str, help='Dataset to choose.', choices=['cifar10'])
+    data_args.add_argument('--dataset', default='cifar10', type=str, help='Dataset to choose.', choices=['cifar10', 'cifar100'])
     data_args.add_argument('--dataset_norm', default='off', type=str, help='Normalize dataset.', choices=['off', 'on'])
 
     # Optimizer

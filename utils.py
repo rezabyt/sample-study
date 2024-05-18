@@ -20,9 +20,10 @@ def seed_experiment(seed):
 
 
 def get_model(dataset, model):
-    if 'cifar10' == dataset:
+    if dataset in ('cifar10', 'cifar100'):
+        num_classes = 10 if dataset == 'cifar10' else 100
         if model == 'resnet18':
-            return ResNet18()
+            return ResNet18(num_classes=num_classes)
         else:
             raise ValueError(f'Model name not recognized ({model})')
     else:

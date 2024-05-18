@@ -21,7 +21,7 @@ trades/logs/*
 slurm*
 wandb/
 
-scripts/
+run_exps/
 
 venv/
 
