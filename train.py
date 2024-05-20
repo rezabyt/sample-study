@@ -126,7 +126,7 @@ def parse_arguments():
 
     # Synthesize data
     syn_args = parser.add_argument_group('Synthesize Data')
-    syn_args.add_argument('--aux_data_filename', default='/home/mila/r/reza.bayat/scratch/data/sample-study/gen/1m.npz', type=str, help='Auxiliary data filename.')
+    syn_args.add_argument('--aux_data_filename', default='./data-aux', type=str, help='Auxiliary data filename.')
     syn_args.add_argument('--aux_take_amount', default=None, type=int, help='Amount of auxiliary data to take. None means all.')
     syn_args.add_argument('--unsup_fraction', default=0.5, type=float, help='Fraction of unsupervised data in each batch.')
 

@@ -63,6 +63,7 @@ class NT:
         self.model.eval()
 
         loss = 0
+        total = 0
         correct = 0
         y_hats = []
         ys = []
@@ -82,11 +83,12 @@ class NT:
             loss += self.get_loss(y_hat, y).item()
             pred = y_hat.max(1, keepdim=True)[1]
             correct += pred.eq(y.view_as(pred)).sum().item()
+            total += y.size(0)
         
         self.model.train()
 
         loss /= len(loader)
-        accuracy = correct / len(loader.dataset)
+        accuracy = correct / total
 
         if step == 'end':
             mode = 'ADV' if adversary else 'CLN'
