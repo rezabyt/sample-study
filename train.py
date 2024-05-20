@@ -121,8 +121,14 @@ def parse_arguments():
     # Dataset
     data_args = parser.add_argument_group('Dataset')
     data_args.add_argument('--data_path', default='./data', type=str, help='Directory path to data.')
-    data_args.add_argument('--dataset', default='cifar10', type=str, help='Dataset to choose.', choices=['cifar10', 'cifar100'])
+    data_args.add_argument('--dataset', default='cifar10', type=str, help='Dataset to choose.', choices=['cifar10', 'cifar10s', 'cifar100'])
     data_args.add_argument('--dataset_norm', default='off', type=str, help='Normalize dataset.', choices=['off', 'on'])
+
+    # Synthesize data
+    syn_args = parser.add_argument_group('Synthesize Data')
+    syn_args.add_argument('--aux_data_filename', default='/home/mila/r/reza.bayat/scratch/data/sample-study/gen/1m.npz', type=str, help='Auxiliary data filename.')
+    syn_args.add_argument('--aux_take_amount', default=None, type=int, help='Amount of auxiliary data to take. None means all.')
+    syn_args.add_argument('--unsup_fraction', default=0.5, type=float, help='Fraction of unsupervised data in each batch.')
 
     # Optimizer
     opt_args = parser.add_argument_group('Optimizer')

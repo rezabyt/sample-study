@@ -35,7 +35,7 @@ class NT:
         if batch_idx % self.args.log_interval == 0:
             print(
                 f'Epoch: {epoch}/{self.args.epochs} '
-                f'Progress: [{batch_idx * len(X)}/{loader_length} ({100. * batch_idx * len(X) / loader_length:.0f}%)] '
+                f'Progress: [{batch_idx}/{loader_length} ({100. * batch_idx / loader_length:.0f}%)] '
                 f'Loss: {loss.item():.6f}')
         return loss
 
@@ -43,7 +43,7 @@ class NT:
         self.model.train()
         epoch_loss = 0
         for batch_idx, batch in enumerate(self.train_loader):
-            loss = self.update(batch=batch, epoch=epoch, batch_idx=batch_idx, loader_length=len(self.train_loader.dataset))
+            loss = self.update(batch=batch, epoch=epoch, batch_idx=batch_idx, loader_length=len(self.train_loader))
             epoch_loss += loss.item() / len(self.train_loader)
             
             base_epoch = self.args.epochs // 10

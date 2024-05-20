@@ -20,8 +20,8 @@ def seed_experiment(seed):
 
 
 def get_model(dataset, model):
-    if dataset in ('cifar10', 'cifar100'):
-        num_classes = 10 if dataset == 'cifar10' else 100
+    if 'cifar' in dataset:
+        num_classes = 10 if dataset in ('cifar10', 'cifar10s') else 100
         if model == 'resnet18':
             return ResNet18(num_classes=num_classes)
         else:
