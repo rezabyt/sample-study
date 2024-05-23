@@ -169,7 +169,7 @@ def main(args):
 
 
 def parse_arguments():
-    parser = argparse.ArgumentParser(description='Confidence Evaluation')
+    parser = argparse.ArgumentParser(description='CIFAR10_NEG Evaluation')
     parser.add_argument('--base_exp_name', default='', type=str, help='Base experiment name')
     parser.add_argument('--save_path', default='./logs', type=str, help='Path to save checkpoints')
     parser.add_argument('--model', default='resnet18', type=str, help='Choose the model.', choices=['resnet18'])
