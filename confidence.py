@@ -199,7 +199,7 @@ def parse_arguments():
     parser = argparse.ArgumentParser(description='Confidence Evaluation')
     parser.add_argument('--base_exp_name', default='', type=str, help='Base experiment name')
     parser.add_argument('--save_path', default='./logs', type=str, help='Path to save checkpoints')
-    parser.add_argument('--dataset', default='cifar10', type=str, help='Dataset to use', choices=['cifar10'])
+    parser.add_argument('--dataset', default='cifar10', type=str, help='Dataset to use', choices=['cifar10', 'cifar10s'])
     parser.add_argument('--data_type', default='clean', type=str, help='Data type to use', choices=['clean', 'adv'])
     parser.add_argument('--seeds', nargs='+', type=int, help='List of seeds')
 
