@@ -55,9 +55,9 @@ def get_adversary(args, model):
     if 'cifar10' in args.dataset:
         if args.attack_name == 'pgd' and args.attack_norm == 'l_inf':
             return PGD(model=model,
-                       eps=args.attack_eps,
+                       eps=args.attack_eps / 255.0,
                        steps=args.attack_steps,
-                       alpha=args.attack_step_size,
+                       alpha=args.attack_step_size / 255.0,
                        random_start=True)
         else:
             raise NotImplementedError(f'Attack name not recognized {args.attack_name}!')

@@ -29,16 +29,18 @@ def main(args):
 
     # Define the experiment directory
     exp_directory = os.path.join(args.save_path, f'logs/{args.dataset}', exp_name)
+    exp_exist = os.path.exists(exp_directory)
 
-    if args.resume == 'on':
-        if not os.path.exists(exp_directory):
-            raise FileNotFoundError(f"Experiment directory {exp_directory} does not exist!")
-        print(f"Resuming training from {exp_directory}!")
-        wandb_job_id = load_wandb_job_id(exp_directory=exp_directory)
-    else:
+    # Create the experiment directory if it does not exist
+    if args.resume == 'off' or (args.resume == 'on' and not exp_exist):
         exp_directory = create_safe_path(exp_directory=exp_directory)
         wandb_job_id = wandb.util.generate_id()
         save_wandb_job_id(exp_directory=exp_directory, wandb_job_id=wandb_job_id)
+    
+    # Resume training
+    if args.resume == 'on':
+        print(f"Resuming training from {exp_directory}!")
+        wandb_job_id = load_wandb_job_id(exp_directory=exp_directory)
 
     safe_exp_name = os.path.split(exp_directory)[-1]
 
@@ -80,8 +82,8 @@ def main(args):
     trainer = get_trainer(args=args, exp_directory=exp_directory, train_loader=train_loader, test_loader=test_loader, 
                           model=model, opt=opt, lr_scheduler=lr_scheduler, device=device, adversary=adversary)
 
-    # Load the saved model, optimizer, and LR scheduler states if resuming
-    if args.resume == 'on':
+    # Load the saved model, optimizer, and LR scheduler states if resuming and experiment exists
+    if args.resume == 'on' and exp_exist:
         checkpoint = get_last_checkpoint(exp_directory)
         init_epoch = trainer.load_from_checkpoint(checkpoint)
     else:
@@ -145,9 +147,9 @@ def parse_arguments():
     attack_args = parser.add_argument_group('Attack')
     attack_args.add_argument('--attack_name', default='pgd', type=str, help='Attack to perform.', choices=['pgd'])
     attack_args.add_argument('--attack_norm', default='l_inf', type=str, help='Norm of the attack.', choices=['l_inf'])
-    attack_args.add_argument('--attack_eps', default=0.031, type=float, help='Epsilon of the attack.')
+    attack_args.add_argument('--attack_eps', default=8, type=float, help='Epsilon of the attack, will be divided by 255.')
     attack_args.add_argument('--attack_steps', default=10, type=int, help='Steps of the attack.')
-    attack_args.add_argument('--attack_step_size', default=0.007, type=float, help='Step size of the attack.')
+    attack_args.add_argument('--attack_step_size', default=2, type=float, help='Step size of the attack, will be divided by 255.')
 
     # Logging
     log_args = parser.add_argument_group('Logging')
