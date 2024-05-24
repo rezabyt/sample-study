@@ -150,8 +150,11 @@ def main(args):
         print(f'{cname}: mean: {accuracy.mean():.4f}, std: {accuracy.std():.4f}')
     
     print(f'Total time taken: {time.time() - start_time}')
-    all_accuracy = np.array(all_accuracy)   
-    np.save(f'results/cifar10_c/{args.base_exp_name}_cifar10_c_accuracy.npy', accuracy)
+    
+    all_accuracy = np.array(all_accuracy)  
+    print(f'({all_accuracy.mean(axis=0).mean():.4f} ± {all_accuracy.mean(axis=0).std():.4f})')
+
+    np.save(f'results/cifar10_c/{args.base_exp_name}_cifar10_c_accuracy.npy', all_accuracy)
     
 
 def parse_arguments():
