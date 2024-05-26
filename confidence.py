@@ -172,6 +172,10 @@ def main(args):
     max_steps = None
     # Get average stats over seeds
     stats = get_stats_over_seeds(args)
+    # Save stats
+    pickle.dump(stats, open(f'results/stats/{args.base_exp_name}.pkl', 'wb'))
+
+    # Select subset of stats
     stats = select_subset(stats, 0, max_steps)
 
     # Define categories of points
