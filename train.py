@@ -123,7 +123,7 @@ def parse_arguments():
     # Dataset
     data_args = parser.add_argument_group('Dataset')
     data_args.add_argument('--data_path', default='./data', type=str, help='Directory path to data.')
-    data_args.add_argument('--dataset', default='cifar10', type=str, help='Dataset to choose.', choices=['cifar10', 'cifar10s', 'cifar100'])
+    data_args.add_argument('--dataset', default='cifar10', type=str, help='Dataset to choose.', choices=['cifar10', 'cifar10s', 'cifar100', 'cifar100s'])
     data_args.add_argument('--dataset_norm', default='off', type=str, help='Normalize dataset.', choices=['off', 'on'])
 
     # Synthesize data

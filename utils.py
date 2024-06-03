@@ -52,7 +52,7 @@ def get_lr_scheduler(args, opt):
 
 
 def get_adversary(args, model):
-    if 'cifar10' in args.dataset:
+    if 'cifar' in args.dataset:
         if args.attack_name == 'pgd' and args.attack_norm == 'l_inf':
             return PGD(model=model,
                        eps=args.attack_eps / 255.0,
